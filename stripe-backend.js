@@ -7,9 +7,7 @@ const express = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 const app = express();
 
-app.use(express.json());
-
-// Add CORS headers
+// CORS headers first
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -20,6 +18,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Use raw body for webhook, JSON for everything else
+app.use((req, res, next) => {
+  if (req.originalUrl === '/webhook') {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 
 /**
@@ -200,5 +206,6 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
 
