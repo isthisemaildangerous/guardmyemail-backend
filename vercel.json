@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "stripe-backend.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "stripe-backend.js"
+    }
+  ]
+}
+```
+
+5. Click **"Commit changes"**
+
+Vercel will auto-redeploy. Wait 1-2 minutes, then test again:
+```
+https://guardmyemail-backend.vercel.app/subscription-status/test@example.com
