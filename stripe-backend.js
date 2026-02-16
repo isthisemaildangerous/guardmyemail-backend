@@ -37,10 +37,9 @@ app.post('/create-checkout-session', async (req, res) => {
   const { priceId, customerEmail, mode } = req.body;
   
   try {
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       mode: mode || 'subscription',
       payment_method_types: ['card'],
-      customer_email: customerEmail,
       line_items: [
         {
           price: priceId,
@@ -50,11 +49,18 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: 'https://guardmyemail.com/success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'https://guardmyemail.com/upgrade',
       allow_promotion_codes: true,
-      billing_address_collection: 'auto',
-      metadata: {
+      billing_address_collection: 'auto'
+    };
+    
+    // Only add customer_email if it's provided and valid
+    if (customerEmail && customerEmail.includes('@')) {
+      sessionConfig.customer_email = customerEmail;
+      sessionConfig.metadata = {
         userEmail: customerEmail
-      }
-    });
+      };
+    }
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig);
     
     res.json({ id: session.id });
   } catch (error) {
@@ -194,4 +200,5 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
