@@ -115,13 +115,47 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 });
 
 async function handleSuccessfulPayment(session) {
-  const customerEmail = session.customer_email || session.metadata.userEmail;
+  let customerEmail = session.customer_email || session.metadata?.userEmail;
   const subscriptionId = session.subscription;
+  
+  // If no email in session, get it from the customer object
+  if (!customerEmail && session.customer) {
+    try {
+      const customer = await stripe.customers.retrieve(session.customer);
+      customerEmail = customer.email;
+    } catch (error) {
+      console.error('Error retrieving customer:', error);
+    }
+  }
   
   console.log(`Payment successful for: ${customerEmail}`);
   console.log(`Subscription ID: ${subscriptionId}`);
+  
+  if (!customerEmail) {
+    console.error('No email found for customer');
+    return;
+  }
+  
+  // Call Apps Script to upgrade user
+  try {
+    const response = await fetch('https://script.google.com/macros/s/AKfycbwhUEKrfvEJ9T2ZT2eyUMUt9xDCqj7oug25HOzEMBZgbkFWEGOO0yKeKF-zmWzjPPSJYg/exec', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'upgrade',
+        email: customerEmail,
+        subscriptionId: subscriptionId
+      })
+    });
+    
+    const result = await response.json();
+    console.log('Apps Script upgrade result:', result);
+  } catch (error) {
+    console.error('Error calling Apps Script:', error);
+  }
 }
-
 async function handleCancellation(subscription) {
   const customerId = subscription.customer;
   const customer = await stripe.customers.retrieve(customerId);
@@ -206,6 +240,7 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
 
 
