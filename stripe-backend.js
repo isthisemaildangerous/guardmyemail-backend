@@ -75,6 +75,35 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
+app.post('/create-portal-session', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Find customer by email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1
+    });
+    
+    if (customers.data.length === 0) {
+      return res.status(404).json({ error: 'No subscription found' });
+    }
+    
+    const customer = customers.data[0];
+    
+    // Create portal session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customer.id,
+      return_url: 'https://guardmyemail.com/success',
+    });
+    
+    res.json({ url: session.url });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 /**
  * Stripe Webhook Handler
  */
@@ -240,6 +269,7 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
 
 
